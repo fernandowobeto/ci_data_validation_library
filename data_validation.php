@@ -10,7 +10,7 @@ if(!defined('BASEPATH'))
  *
  * @package		CodeIgniter
  * @author		Fernando Wobeto
- * @copyright	Copyright (c) 2013
+ * @copyright	Copyright (c) 2014
  * @license
  * @link		http://www.fernandowobeto.com
  */
@@ -28,16 +28,10 @@ if(!defined('BASEPATH'))
   'type'=>'alpha_numeric',
   'type'=>'date',
   'type'=>'boolean',
-  'type'=>'time',
-  'type'=>'cnpj',
-  'type'=>'cpf',
   'type'=>'email',
   'type'=>'emails',
-  'type'=>'cep',
   'type'=>'ip',
   'type'=>'url',
-  'type'=>'year'
-  'type'=>'month'
 
   'regex_match'=>'/^(ablubla)$/',
   'maxlength'=>25,
@@ -57,6 +51,7 @@ class Data_validation{
 	private $_rules;
 	private $_original_data;
 	private $_errors = array();
+	private $_order_to_validate = array('required','type','minlength','maxlength','exactlength','lessthan','greaterthan');
 
 	public function __construct(){
 		$this->CI = & get_instance();
@@ -78,25 +73,25 @@ class Data_validation{
 
 	public function validate(Array $data = array()){
 
-		if(!isset($this->_rules))
-			exit('Sem regras definidas');
+		if(!isset($this->_rules)){
+			throw new Exception('no rules');
+		}
 
 		$this->_original_data = $data;
 
-		// Carrega o arquivo de lang contendo as mensagens de erro
+		// load validation lang file
 		$this->CI->lang->load($this->_validation_lang_file);
 
 		foreach($this->_rules AS $field=> $definitions){
 			$this->_execute($field,$definitions);
 		}
-		//Existem erros?
-		if(!count($this->_errors)){
-			//Não?
-			return TRUE;
-		} else{
-			//Sim?
-			return FALSE;
+		// error?
+		if(count($this->_errors)){
+			//yes 
+			return false;
 		}
+		// no
+		return true;
 	}
 
 	public function get_validation_errors(){
@@ -104,18 +99,9 @@ class Data_validation{
 	}
 
 	private function _execute($field,$definitions){
-		$field_rules = $definitions['rules'];
-		$order = array(
-			 'required'=>NULL,
-			 'type'=>NULL,
-			 'minlength'=>NULL,
-			 'maxlength'=>NULL,
-			 'exactlength'=>NULL,
-			 'lessthan'=>NULL,
-			 'greaterthan'=>NULL,
-		);
-		$merged			= array_merge($order,$field_rules);
-		$field_rules	= array_diff_assoc($merged,$order);
+		$field_rules	= $definitions['rules'];
+		$merged			= array_merge(array_flip($this->_order_to_validate),$field_rules);
+		$field_rules	= array_diff_assoc($merged,array_flip($this->_order_to_validate));
 
 		$field_value = isset($this->_original_data[$field])?$this->_original_data[$field]:NULL;
 		//se o campo não é obrigatorio e o valor está setado como null não efetua acao alguma
@@ -147,7 +133,7 @@ class Data_validation{
 		$type = $this->_get_key_lang($rule_name);
 		//verifica se existe mensagem de erro no arquivo de lang de acordo com o type
 		if(FALSE===($error_message = $this->CI->lang->line($type))){
-			$error_message = 'Mensagem de erro não setada no arquivo lang para este tipo de regra '.$type;
+			$error_message = 'No message error to '.$type;
 		}
 		// Constroi a mensagem de erro
 		$message = sprintf($error_message,$label,$param);
@@ -165,12 +151,8 @@ class Data_validation{
 			 'bigint'=>'integer',
 			 'date'=>'date',
 			 'boolean'=>'boolean',
-			 'time'=>'time',
-			 'cnpj'=>'cnpj',
-			 'cpf'=>'cpf',
 			 'email'=>'valid_email',
 			 'emails'=>'valid_emails',
-			 'cep'=>'cep',
 			 'ip'=>'valid_ip',
 			 'url'=>'valid_url',
 			 'regex_match'=>'regex_match',
@@ -243,27 +225,6 @@ class Data_validation{
 	 */
 	function digit($str){
 		return preg_match('/^\d+$/',$str);
-	}
-	/**
-	 * cpf
-	 *
-	 * @access	public
-	 * @param	string
-	 * @return	bool
-	 */
-	function cpf($str){
-		return $this->digit($str);
-	}
-
-	/**
-	 * cnpj
-	 *
-	 * @access	public
-	 * @param	string
-	 * @return	bool
-	 */
-	function cnpj($str){
-		return $this->digit($str);
 	}
 	/**
 	 * timestamp
@@ -428,16 +389,6 @@ class Data_validation{
 		return TRUE;
 	}
 	/**
-	 * cep
-	 *
-	 * @access	public
-	 * @param	string
-	 * @return	bool
-	 */
-	function cep($str){
-		return (bool)preg_match('/^([0-9]{5})\-([0-9]{3})$/',$str);
-	}
-	/**
 	 * inlist
 	 *
 	 * @access	public
@@ -534,45 +485,6 @@ class Data_validation{
 		list($yyyy,$mm,$dd) = explode("-",$str); // split the array
 		return checkdate($mm,$dd,$yyyy);
 	}
-	/**
-	 * Validate Time
-	 *
-	 * Tests a string for a valid time
-	 * Currently only accepts dates in the following formats:
-	 * hh:mm, hh:mm:ss
-	 *
-	 * @access	public
-	 * @param	string
-	 * @return	bool
-	 */
-	function time($str){
-		return is_time($str);
-	}
-	/**
-	 * Validate Year
-	 *
-	 * Tests a string for a valid Year
-	 *
-	 * @access	public
-	 * @param	string
-	 * @return	bool
-	 */
-	function year($str){
-		return is_year($str);
-	}
-	/**
-	 * Validate Month
-	 *
-	 * Tests a string for a valid Month
-	 *
-	 * @access	public
-	 * @param	string
-	 * @return	bool
-	 */
-	function month($str){
-		return is_month($str);
-	}
 }
-
 /* End of file data_validation.php */
 /* Location: ./application/libraries/sg/data_validation.php */
