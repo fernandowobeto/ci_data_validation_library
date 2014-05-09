@@ -227,16 +227,6 @@ class Data_validation{
 		return preg_match('/^\d+$/',$str);
 	}
 	/**
-	 * timestamp
-	 *
-	 * @access	public
-	 * @param	string
-	 * @return	bool
-	 */
-	function timestamp($str){
-		return is_timestamp($str);
-	}
-	/**
 	 * Minimum Length
 	 *
 	 * @access	public
